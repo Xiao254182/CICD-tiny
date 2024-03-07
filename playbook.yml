@@ -3,15 +3,17 @@
   remote_user: root
 
   tasks:
-    - name: install epel-* maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
-      shell: yum install -y epel-* maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
+    - name: install epel-*
+      shell: yum install -y epel-*
+    - name: install maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
+      shell: yum install -y maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
 ###############################################################################################################
 - hosts: Version
   remote_user: root
 
   tasks:
     - name: install gitlab-ce-16.9.1
-      shell: yum install -y https://packages.gitlab.com/gitlab/gitlab-ce/packages/el/7/gitlab-ce-16.9.1-ce.0.el7.x86_64.rpm || echo "ignore"
+      shell: curl -s https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh | sudo bash
     - name: Configure gitlab and run it
       shell: sed -i "s/http:\/\/gitlab.example.com/http:\/\/{{ ansible_default_ipv4.address }}/g" /etc/gitlab/gitlab.rb && gitlab-ctl reconfigure && gitlab-ctl restart
     - name: Move get_docker.sh packets to the target host
