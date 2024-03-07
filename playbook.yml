@@ -1,0 +1,105 @@
+---
+- hosts: Develop
+  remote_user: root
+
+  tasks:
+    - name: install epel-* maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
+      shell: yum install -y epel-* maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
+###############################################################################################################
+- hosts: Version
+  remote_user: root
+
+  tasks:
+    - name: install gitlab-ce-16.9.1
+      shell: yum install -y https://packages.gitlab.com/gitlab/gitlab-ce/packages/el/7/gitlab-ce-16.9.1-ce.0.el7.x86_64.rpm || echo "ignore"
+    - name: Configure gitlab and run it
+      shell: sed -i "s/http:\/\/gitlab.example.com/http:\/\/{{ ansible_default_ipv4.address }}/g" /etc/gitlab/gitlab.rb && gitlab-ctl reconfigure && gitlab-ctl restart
+    - name: Move get_docker.sh packets to the target host
+      copy:
+        src: "./get_docker.sh"
+        dest: "/root/"
+    - name: install docker-25.0.3
+      shell: bash get_docker.sh
+    - name: Create Docker Acceleration File
+      shell: touch /etc/docker/daemon.json
+    - name: Configure Docker Acceleration Source
+      blockinfile:
+        path: /etc/docker/daemon.json
+        block: |
+          {
+            "registry-mirrors": ["https://registry.docker-cn.com"],
+            "insecure-registries": [""{{ ansible_default_ipv4.address }}""]
+          }
+    - name: Replace double quotes
+      shell: sed -i "s/\"\"/\"/g" /etc/docker/daemon.json
+    - name: Delete file comments
+      shell: sed -i "s/# BEGIN ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json && sed -i "s/# END ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json
+    - name: start docker-25.0.3
+      shell: systemctl enable docker --now
+    - name: install docker-compose-1.18.0
+      shell: yum install -y docker-compose
+    - name: Download harbor
+      shell: wget https://github.com/goharbor/harbor/releases/download/v2.3.4/harbor-offline-installer-v2.3.4.tgz
+    - name: decompression harbor-offline-installer-v2.5.3.tgz
+      shell: tar -xzf harbor-online-installer-v1.9.2.tgz
+    - name: Copy Harbor configuration file template
+      shell: cp /root/harbor/harbor.yml.tmpl /root/harbor/harbor.yml
+    - name: Modify the Harbor configuration file
+      shell: "cp /root/harbor/harbor.yml.tmpl /root/harbor/harbor.yml && sed -i 's/reg.mydomain.com/{{ ansible_default_ipv4.address }}/g' /root/harbor/harbor.yml && sed -i 's/port: 80/port: 8081/g' /root/harbor/harbor.yml && sed -i 's/certificate/#certificate/g' /root/harbor/harbor.yml && sed -i 's/private_key/#private_key/g' /root/harbor/harbor.yml && sed -i 's/https:/#https:/g' /root/harbor/harbor.yml && sed -i 's/port: 443/#port: 443/g' /root/harbor/harbor.yml"
+    - name: Prepare to start haorbor
+      shell: bash /root/harbor/prepare
+    - name: start harbor
+      shell: bash /root/harbor/install.sh
+    - name: install httpd
+      shell: yum install -y httpd
+    - name: Modify listening port
+      shell: sed -i "s/Listen 80/Listen 81/g" /etc/httpd/conf/httpd.conf
+    - name: start httpd
+      shell: "systemctl restart httpd && systemctl enable httpd"
+    - name: install httpd
+      shell: yum install -y httpd
+###############################################################################################################
+- hosts: Devops
+  remote_user: root
+
+  tasks:
+    - name: install epel-* ansible vim wget tcpdump net-tools unzip git java-1.8.0-openjdk-*
+      shell: yum install -y epel-* ansible vim wget tcpdump net-tools unzip git java-1.8.0-openjdk-*
+    - name: Move get_docker.sh packets to the target host
+      copy:
+        src: "./get_docker.sh"
+        dest: "/root/"
+    - name: install docker-25.0.3
+      shell: bash get_docker.sh
+    - name: Create Docker Acceleration File
+      shell: touch /etc/docker/daemon.json
+    - name: Configure Docker Acceleration Source
+      blockinfile:
+        path: /etc/docker/daemon.json
+        block: |
+          {
+            "registry-mirrors": ["https://registry.docker-cn.com"]
+          }
+    - name: Delete file comments
+      shell: sed -i "s/# BEGIN ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json && sed -i "s/# END ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json
+    - name: start docker-25.0.3
+      shell: systemctl enable docker --now
+    - name: install docker-compose-1.18.0
+      shell: yum install -y docker-compose
+    - name: Download jenkins-2.346.3-1.1
+      shell: wget https://repo.huaweicloud.com/jenkins/redhat-stable/jenkins-2.346.3-1.1.noarch.rpm
+    - name: install jenkins-2.346.3-1.1
+      shell: rpm -ivh jenkins-2.346.3-1.1.noarch.rpm
+    - name: Switching Users
+      shell: sed -i "s/JENKINS_USER="jenkins"/JENKINS_USER="root"/g" /etc/sysconfig/jenkins
+    - name: Configure Java path
+      shell: sed -i '106i\\/usr\/lib\/jvm\/java' /etc/init.d/jenkins
+    - name: start Jenkins
+      shell: nohup bash /etc/init.d/jenkins start &
+###############################################################################################################
+- hosts: Produce
+  remote_user: root
+
+  tasks:
+    - name: install epel-* nginx mysql-server
+      shell: yum install -y eperl-* nginx mysql-server
