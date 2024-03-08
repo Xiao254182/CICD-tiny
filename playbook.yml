@@ -4,7 +4,7 @@
 
   tasks:
     - name: Change to domestic yum source
-      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast
+      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast || echo "ignore"
     - name: install epel-* maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
       shell: yum install -y epel-* && yum install -y maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
 ###############################################################################################################
@@ -13,7 +13,7 @@
 
   tasks:
     - name: Change to domestic yum source
-      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast
+      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast || echo "ignore"
     - name: install gitlab-ce-16.9.1
       shell: curl -s https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh | sudo bash
     - name: Configure gitlab and run it
@@ -68,7 +68,7 @@
 
   tasks:
     - name: Change to domestic yum source
-      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast
+      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast || echo "ignore"
     - name: install epel-* ansible vim wget tcpdump net-tools unzip git java-1.8.0-openjdk-*
       shell: yum install -y epel-* && yum install -y ansible vim wget tcpdump net-tools unzip git java-1.8.0-openjdk-*
     - name: Move get_docker.sh packets to the target host
@@ -108,6 +108,6 @@
 
   tasks:
     - name: Change to domestic yum source
-      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast
+      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast || echo "ignore"
     - name: install epel-* nginx mysql-server
       shell: yum install -y eperl-* && yum install -y nginx mysql-server
