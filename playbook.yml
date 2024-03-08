@@ -3,10 +3,8 @@
   remote_user: root
 
   tasks:
-    - name: install epel-*
-      shell: yum install -y epel-*
-    - name: install maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
-      shell: yum install -y maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
+    - name: install epel-* maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
+      shell: yum install -y epel-* && yum install -y maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
 ###############################################################################################################
 - hosts: Version
   remote_user: root
@@ -66,7 +64,7 @@
 
   tasks:
     - name: install epel-* ansible vim wget tcpdump net-tools unzip git java-1.8.0-openjdk-*
-      shell: yum install -y epel-* ansible vim wget tcpdump net-tools unzip git java-1.8.0-openjdk-*
+      shell: yum install -y epel-* && yum install -y ansible vim wget tcpdump net-tools unzip git java-1.8.0-openjdk-*
     - name: Move get_docker.sh packets to the target host
       copy:
         src: "./get_docker.sh"
@@ -104,4 +102,4 @@
 
   tasks:
     - name: install epel-* nginx mysql-server
-      shell: yum install -y eperl-* nginx mysql-server
+      shell: yum install -y eperl-* && yum install -y nginx mysql-server
