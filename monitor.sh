@@ -27,3 +27,4 @@ printf "  \"useRate\":\"$useRate%%\"\n" >> /root/monitor.json
 printf "}\n" >> /root/monitor.json
 
 #nc -u 192.168.100.31 12201 < /root/monitor.json
+#Graylog
