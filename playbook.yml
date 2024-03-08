@@ -15,7 +15,7 @@
     - name: Change to domestic yum source
       shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast || echo "ignore"
     - name: install gitlab-ce-16.9.1
-      shell: curl -s https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh | sudo bash && yum install -y gitlab-ce
+      shell: curl -s https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh | sudo bash && yum install -y gitlab-ce vim epel-*
     - name: Configure gitlab and run it
       shell: sed -i "s/http:\/\/gitlab.example.com/http:\/\/{{ ansible_default_ipv4.address }}/g" /etc/gitlab/gitlab.rb && gitlab-ctl reconfigure && gitlab-ctl restart
     - name: Move get_docker.sh packets to the target host
