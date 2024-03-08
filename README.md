@@ -1,6 +1,6 @@
 # CICD-tiny
 一键部署精简版企业CICD流水线脚本<br>
-开发节点：Java,tomcat,nodejs,npm，mysql<br>
+开发节点：Java,tomcat,nodejs,npm,mysql<br>
 版本控制节点：GitLab,docker,docker-compose,httpd,harbor<br>
 运维节点：docker,docker-compose,jenkins,ansible,graylog<br>
 生产节点：Nginx(OpenResty)<br>
