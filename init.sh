@@ -16,7 +16,7 @@ echo "更新国内yum源成功"
 
 #安装必要配置
 echo "正在安装vim wget net-tools epel-* ansible"
-yum install -y vim wget net-tools epel-* ansible
+yum install -y epel-* && yum install -y vim wget net-tools ansible
 echo "安装完成"
 
 echo "请选择您的集群节点ip地址"
