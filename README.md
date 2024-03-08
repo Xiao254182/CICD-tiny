@@ -9,4 +9,4 @@
 GitLab：https://packages.gitlab.com/gitlab/gitlab-ce/packages/el/7/gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm/download.rpm<br>
 Harbor：https://github.com/goharbor/harbor/releases/download/v2.3.4/harbor-offline-installer-v2.5.3.tgz<br>
 Jenkins：https://repo.huaweicloud.com/jenkins/redhat-stable/jenkins-2.346.3-1.1.noarch.rpm<br>
-Graylog：https://packages.graylog2.org/repo/packages/graylog-5.0-repository_latest.rpm<br>
+Graylog：https://packages.graylog2.org/repo/el/stable/5.0/x86_64/graylog-server-5.0.13-1.x86_64.rpm
