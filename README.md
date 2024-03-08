@@ -5,7 +5,7 @@
 运维节点：docker,docker-compose,jenkins,ansible,graylog<br>
 生产节点：Nginx(OpenResty)<br>
 
-软件包下载地址，建议提前下载
+软件包下载地址，建议提前下载<br>
 GitLab：https://packages.gitlab.com/gitlab/gitlab-ce/packages/el/7/gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm/download.rpm<br>
 Harbor：https://github.com/goharbor/harbor/releases/download/v2.3.4/harbor-offline-installer-v2.5.3.tgz<br>
 Jenkins：https://repo.huaweicloud.com/jenkins/redhat-stable/jenkins-2.346.3-1.1.noarch.rpm<br>
