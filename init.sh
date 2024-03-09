@@ -16,26 +16,30 @@ echo "更新国内yum源成功"
 
 #安装必要配置
 echo "正在安装vim wget net-tools epel-* ansible"
-yum install -y epel-* && yum install -y vim wget net-tools ansible
+yum install -y epel-* && yum install -y vim wget net-tools ansible sshpass
 echo "安装完成"
-
-echo "请选择您的集群节点ip地址"
-#定义主机集群ip地址数组
-ClusterIpName=("Develop" "Version" "Devops" "Produce")
-#循环遍历输入节点ip
-for i in ${ClusterIpName[@]}
-do
-    read -p "请输入${i}节点的ip地址: " ${i}_ip_addr
-    # echo "${i}节点ip地址为: ${i}ip_addr"
-done
 
 #建立本地ssh密钥
 ssh-keygen
 
+echo "请选择您的集群节点ip地址"
+#定义主机集群ip地址数组
+ClusterIpName=("Develop" "Version" "Devops" "Produce")
+
+#获取控制节点主机ip地址
+ansible_ipaddr=$(ip a | grep -w inet | grep -w brd | awk '{print $2}' | sed "s/\/..*//g")
+
+#配置Graylog目标节点
+sed -i "s/ipaddr/${Produce_ip_addr}/g" /root/monitor.sh
+
 #检测集群节点间网络是否通畅
 for i in ${ClusterIpName[@]}
 do
+#循环遍历输入节点ip
+    read -p "请输入${i}节点的ip地址: " ${i}_ip_addr
+    read -p "请输入${i}节点的密码: " ${i}_password
     ip_connect="${i}_ip_addr"
+    ip_passwd="${i}_password"
     ping -c1 "${!ip_connect}" >> /dev/null
     systemctl stop firewalld && systemctl disable firewalld && setenforce 0
     if [ $(echo $? -ne 0) ];then 
@@ -43,12 +47,16 @@ do
         exit 0
     else
         echo "连接${i}节点成功"
-        #配置集群节点间信任
-        ssh-copy-id ${!ip_connect}
+		sed -i "s/#   StrictHostKeyChecking ask/StrictHostKeyChecking no/g" /etc/ssh/ssh_config
+	    sshpass -p ${!ip_passwd} ssh-copy-id ${!ip_connect}
+        cp /root/scp.exp.tmpl /root/${i}_scp.exp
+        sed -e "s/passwd/${!ip_passwd}/g" -e "s/ansible_ipaddr/$ansible_ipaddr/g" /root/scp.exp.tmpl > /root/${i}_scp.exp
         #配置ansible的hosts主机组
         echo "[${i}]" >> /etc/ansible/hosts
         echo "${!ip_connect}" >> /etc/ansible/hosts
     fi
 done
+
+#执行ansible剧本
 ansible-playbook playbook.yml
 echo "完成"

@@ -1,0 +1,5 @@
+# /usr/bin/expect 
+spawn scp -o "StrictHostKeyChecking no" root@ansible_ipaddr:/root/package /root/ 
+expect "*password:" 
+send "passwd\r"
+expect eof 
