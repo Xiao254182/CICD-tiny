@@ -5,12 +5,38 @@
   tasks:
     - name: stop firewalld
       shell: systemctl stop firewalld && systemctl disable firewalld && sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config && setenforce 0
-    - name: Change to domestic yum source
-      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast || echo "ignore"
-    - name: stop firewalld
-      shell: systemctl stop firewalld && systemctl disable firewalld && setenforce 0
-    - name: install epel-* maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
-      shell: yum install -y epel-* && yum install -y maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
+
+    - name: Change
+      block:
+        - name: Change to domestic yum source
+          shell: |
+            mkdir /etc/yum.repos.d/CentOS_bak
+            mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak
+            curl -o /etc/yum.repos.d/Centos-7.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+            yum clean all
+            yum makecache fast
+            yum install -y epel-*
+          args:
+            creates: /etc/yum.repos.d/CentOS_bak
+
+    - name: install maven npm nodejs net-tools vim wget git java-1.8.0-openjdk-* unzip tomcat mysql
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - maven
+        - npm
+        - nodejs
+        - net-tools
+        - vim
+        - wget
+        - git
+        - java-1.8.0-openjdk
+        - unzip
+        - tomcat
+        - mysql
+      tags: ["install"]
+
 ###############################################################################################################
 - hosts: Version
   remote_user: root
@@ -18,58 +44,204 @@
   tasks:
     - name: stop firewalld
       shell: systemctl stop firewalld && systemctl disable firewalld && sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config && setenforce 0
+
     - name: Change to domestic yum source
-      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast  && yum install -y expect || echo "ignore"
+      block:
+        - name: Change to domestic yum source
+          shell: |
+            mkdir /etc/yum.repos.d/CentOS_bak
+            mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak
+            curl -o /etc/yum.repos.d/Centos-7.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+            yum clean all
+            yum makecache fast
+            yum install -y expect epel-*
+          args:
+            creates: /etc/yum.repos.d/CentOS_bak
+
     - name: Move Version_scp.exp to the target host
       copy:
         src: "/root/Version_scp.exp"
         dest: "/root/"
-    - name: Change package
-      shell: sed -i "s/package/gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm/g" /root/Version_scp.exp || echo "ignore"
-    - name: Check if gitlab_rpm file exists
+
+    - name: Change package in Version_scp.exp
+      replace:
+        path: /root/Version_scp.exp
+        regexp: "package"
+        replace: "gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm"
+
+    - name: Move gitlab to the target host
       shell: expect Version_scp.exp || echo "ignore"
-    - name: install gitlab-ce-16.9.1
-      shell: yum install -y gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm && yum install -y vim epel-* wget || curl -s https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh | sudo bash && yum install -y gitlab-ce vim epel-* wget
+
+    - name: Check if gitlab_rpm file exists
+      stat:
+        path: /root/gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm
+      register: rpm_file
+
+    - name: Install gitlab-ce-16.9.1
+      block:
+        - name: Download gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm if not exists
+          get_url:
+            url: https://packages.gitlab.com/gitlab/gitlab-ce/packages/el/7/gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm/download.rpm
+            dest: /root/gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm
+          when: not rpm_file.stat.exists
+
+        - name: Install gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm
+          yum:
+            name: /root/gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm
+            state: present
+          when: rpm_file.stat.exists
+
+    - name: Installation verification
+      shell: yum install -y gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm || echo "ignore"
+
+    - name: Install dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - vim
+        - epel-release
+        - wget
+      tags: ["install"]
+
     - name: Configure gitlab and run it
-      shell: sed -i "s/http:\/\/gitlab.example.com/http:\/\/{{ ansible_default_ipv4.address }}/g" /etc/gitlab/gitlab.rb && gitlab-ctl reconfigure && gitlab-ctl restart
-    - name: install docker
-      shell: curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
-    - name: Create Docker Acceleration File
-      shell: touch /etc/docker/daemon.json
-    - name: Configure Docker Acceleration Source
-      blockinfile:
-        path: /etc/docker/daemon.json
-        block: |
-          {
-            "registry-mirrors": ["https://registry.docker-cn.com"],
-            "insecure-registries": [""{{ ansible_default_ipv4.address }}""]
-          }
-    - name: Replace double quotes
-      shell: sed -i "s/\"\"/\"/g" /etc/docker/daemon.json
-    - name: Delete file comments
-      shell: sed -i "s/# BEGIN ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json && sed -i "s/# END ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json
-    - name: start docker-25.0.3
-      shell: systemctl enable docker --now
-    - name: install docker-compose-1.18.0
-      shell: yum install -y docker-compose
+      block:
+        - name: Replace gitlab URL
+          replace:
+            path: /etc/gitlab/gitlab.rb
+            regexp: 'http:\/\/gitlab.example.com'
+            replace: "http://{{ ansible_default_ipv4.address }}"
+
+    - name: Reconfigure and Restart gitlab
+      shell: gitlab-ctl reconfigure && gitlab-ctl restart
+
+    - name: Install docker and docker-compose
+      block:
+        - name: Install docker
+          shell: >
+            curl -fsSL https://get.docker.com | sudo bash -s docker --mirror Aliyun
+        - name: Create Docker Acceleration File
+          file:
+            path: /etc/docker/daemon.json
+            state: touch
+        - name: Configure Docker Acceleration Source
+          blockinfile:
+            path: /etc/docker/daemon.json
+            block: |
+              {
+                "registry-mirrors": ["https://registry.docker-cn.com"],
+                "insecure-registries": [""{{ ansible_default_ipv4.address }}""]
+              }
+        - name: Replace double quotes
+          shell: sed -i "s/\"\"/\"/g" /etc/docker/daemon.json
+        - name: Delete file comments
+          shell: sed -i "s/# BEGIN ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json && sed -i "s/# END ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json
+
+        - name: Start docker service
+          systemd:
+            name: docker
+            enabled: yes
+            state: started
+        - name: install docker-compose-1.18.0
+          yum:
+            name: docker-compose
+            state: present
+
+    - name: Install harbor
+      block:
+        - name: change harbor file exists
+          replace:
+            path: /root/Version_scp.exp
+            regexp: "gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm"
+            replace: "harbor-offline-installer-v2.5.3.tgz"
+
+        - name: Move harbor to the target host
+          shell: expect Version_scp.exp || echo "ignore"
+
     - name: Check if harbor file exists
-      shell: sed -i "s/gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm/harbor-offline-installer-v2.5.3.tgz/g" /root/Version_scp.exp && expect Version_scp.exp || echo "ignore"
-    - name: install harbor
-      shell: tar -xzf /root/harbor-offline-installer-v2.5.3.tgz || wget https://github.com/goharbor/harbor/releases/download/v2.5.3/harbor-offline-installer-v2.5.3.tgz && tar -xzf /root/harbor-offline-installer-v2.5.3.tgz
+      stat:
+        path: /root/harbor-offline-installer-v2.5.3.tgz
+      register: harbor
+
+    - name: Configure Harbor
+      block:
+        - name: Download harbor-offline-installer-v2.5.3.tgz if not exists
+          get_url:
+            url: https://github.com/goharbor/harbor/releases/download/v2.3.4/harbor-offline-installer-v2.5.3.tgz
+            dest: /root/harbor-offline-installer-v2.5.3.tgz
+          when: not harbor.stat.exists
+
+        - name: Extract harbor package
+          unarchive:
+            src: "/root/harbor-offline-installer-v2.5.3.tgz"
+            dest: "/root/"
+          when: harbor.stat.exists
+
+    - name: Installation verification
+      shell: tar -xvf harbor-offline-installer-v2.5.3.tgz --skip-old-files
+
     - name: Copy Harbor configuration file template
-      shell: cp /root/harbor/harbor.yml.tmpl /root/harbor/harbor.yml
+      copy:
+        src: /root/harbor/harbor.yml.tmpl
+        dest: /root/harbor/harbor.yml
+        remote_src: yes
     - name: Modify the Harbor configuration file
-      shell: "cp /root/harbor/harbor.yml.tmpl /root/harbor/harbor.yml && sed -i 's/reg.mydomain.com/{{ ansible_default_ipv4.address }}/g' /root/harbor/harbor.yml && sed -i 's/port: 80/port: 8081/g' /root/harbor/harbor.yml && sed -i 's/certificate/#certificate/g' /root/harbor/harbor.yml && sed -i 's/private_key/#private_key/g' /root/harbor/harbor.yml && sed -i 's/https:/#https:/g' /root/harbor/harbor.yml && sed -i 's/port: 443/#port: 443/g' /root/harbor/harbor.yml"
-    - name: Prepare to start haorbor
-      shell: bash /root/harbor/prepare
-    - name: start harbor
-      shell: bash /root/harbor/install.sh
-    - name: install httpd
-      shell: yum install -y httpd
-    - name: Modify listening port
-      shell: sed -i "s/Listen 80/Listen 81/g" /etc/httpd/conf/httpd.conf
-    - name: start httpd
-      shell: "systemctl restart httpd && systemctl enable httpd"
+      block:
+        - name: Modify hostname
+          replace:
+            path: /root/harbor/harbor.yml
+            regexp: "reg.mydomain.com"
+            replace: "{{ ansible_default_ipv4.address }}"
+
+        - name: change port of http
+          replace:
+            path: /root/harbor/harbor.yml
+            regexp: "port: 80"
+            replace: "port: 81"
+
+        - name: Turn off HTTPS
+          replace:
+            path: /root/harbor/harbor.yml
+            regexp: "https:"
+            replace: "#https:"
+
+        - name: Modify listening port
+          replace:
+            path: /root/harbor/harbor.yml
+            regexp: "port: 443"
+            replace: "#port: 443"
+
+        - name: Modify listening port
+          replace:
+            path: /root/harbor/harbor.yml
+            regexp: "certificate: /your/certificate/path"
+            replace: "#certificate: /your/certificate/path"
+
+        - name: Modify listening port
+          replace:
+            path: /root/harbor/harbor.yml
+            regexp: "private_key: /your/private/key/path"
+            replace: "#private_key: /your/private/key/path"
+
+    - name: Prepare and start haorbor
+      shell: bash /root/harbor/prepare && bash /root/harbor/install.sh
+
+    - name: Install httpd and modify listening port
+      block:
+        - name: Install httpd
+          yum:
+            name: httpd
+            state: present
+        - name: Modify listening port
+          replace:
+            path: /etc/httpd/conf/httpd.conf
+            regexp: "Listen 80"
+            replace: "Listen 8000"
+        - name: Start httpd
+          systemd:
+            name: httpd
+            state: started
+            enabled: yes
 ###############################################################################################################
 - hosts: Devops
   remote_user: root
@@ -77,72 +249,153 @@
   tasks:
     - name: stop firewalld
       shell: systemctl stop firewalld && systemctl disable firewalld && sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config && setenforce 0
+
     - name: Change to domestic yum source
-      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast || echo "ignore"
-    - name: install epel-* ansible vim wget tcpdump net-tools unzip git java-1.8.0-openjdk-* pwgen expect
-      shell: yum install -y epel-* && yum install -y ansible vim wget tcpdump net-tools unzip git java-1.8.0-openjdk-* pwgen expect
-    - name: install docker
-      shell: curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
-    - name: Create Docker Acceleration File
-      shell: touch /etc/docker/daemon.json
-    - name: install docker
-      shell: curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
-    - name: Delete file comments
-      shell: sed -i "s/# BEGIN ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json && sed -i "s/# END ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json
-    - name: start docker-25.0.3
-      shell: systemctl enable docker --now
-    - name: install docker-compose-1.18.0
-      shell: yum install -y docker-compose
+      block:
+        - name: Change to domestic yum source
+          shell: >
+            mkdir /etc/yum.repos.d/CentOS_bak && 
+            mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && 
+            curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && 
+            mv ./Centos-7.repo /etc/yum.repos.d/ && 
+            yum clean all && 
+            yum makecache fast
+
+    - name: Install required packages
+      block:
+        - name: install epel-release
+          yum:
+            name: epel-release
+            state: present
+
+        - name: Install packages
+          block:
+            - name: Install basic packages
+              package:
+                name: "{{ item }}"
+                state: present
+              loop:
+                - "vim"
+                - "wget"
+                - "tcpdump"
+                - "net-tools"
+                - "unzip"
+                - "git"
+                - "java-1.8.0-openjdk"
+                - "pwgen"
+                - "expect"
+              tags: ["install"]
+
+    - name: Install docker and docker-compose
+      block:
+        - name: Install docker
+          shell: >
+            curl -fsSL https://get.docker.com | sudo bash -s docker --mirror Aliyun
+        - name: Create Docker Acceleration File
+          file:
+            path: /etc/docker/daemon.json
+            state: touch
+        - name: Configure Docker Acceleration Source
+          blockinfile:
+            path: /etc/docker/daemon.json
+            block: |
+              {
+                "registry-mirrors": ["https://registry.docker-cn.com"],
+                "insecure-registries": ["Version_ip"]
+              }
+        - name: Delete file comments
+          shell: sed -i "s/# BEGIN ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json && sed -i "s/# END ANSIBLE MANAGED BLOCK/ /g" /etc/docker/daemon.json
+
+        - name: Start docker service
+          systemd:
+            name: docker
+            enabled: yes
+            state: started
+        - name: install docker-compose-1.18.0
+          yum:
+            name: docker-compose
+            state: present
+
     - name: Move Devops_scp.exp to the target host
       copy:
         src: "/root/Devops_scp.exp"
         dest: "/root/"
+
     - name: Change package
-      shell: sed -i "s/package/jenkins-2.346.3-1.1.noarch.rpm/g" /root/Devops_scp.exp || echo "ignore"
-    - name: Check if Jenkins is installed
-      command: rpm -q jenkins
-      register: jenkins_installed
-      ignore_errors: true
-    - name: Download jenkins package if not installed
-      get_url:
-        url: https://repo.huaweicloud.com/jenkins/redhat-stable/jenkins-2.346.3-1.1.noarch.rpm
-        dest: /root/jenkins-2.346.3-1.1.noarch.rpm
-      when: jenkins_installed.rc != 0
-    - name: Install jenkins package
-      yum:
-        name: /root/jenkins-2.346.3-1.1.noarch.rpm
-        state: present
-      when: jenkins_installed.rc != 0
+      replace:
+        path: /root/Devops_scp.exp
+        regexp: "package"
+        replace: "jenkins-2.346.3-1.1.noarch.rpm"
+
+    - name: Move jenkins to host
+      shell: expect /root/Devops_scp.exp || echo "ignore"
+
+    - name: Check if jenkins file exists
+      stat:
+        path: /root/jenkins-2.346.3-1.1.noarch.rpm
+      register: jenkins
+
+    - name: Install jenkins-2.346.3-1.1.noarch.rpm
+      block:
+        - name: Download jenkins-2.346.3-1.1.noarch.rpm if not exists
+          get_url:
+            url: https://repo.huaweicloud.com/jenkins/redhat-stable/jenkins-2.346.3-1.1.noarch.rpm
+            dest: /root/jenkins-2.346.3-1.1.noarch.rpm
+          when: not jenkins.stat.exists
+
+        - name: Install jenkins-2.346.3-1.1.noarch.rpm
+          yum:
+            name: /root/jenkins-2.346.3-1.1.noarch.rpm
+            state: present
+          when: jenkins.stat.exists
+
+    - name: Installation verification
+      shell: yum install -y jenkins-2.346.3-1.1.noarch.rpm || echo "ignore"
+
     - name: Switching Users
-      shell: sed -i "s/JENKINS_USER="jenkins"/JENKINS_USER="root"/g" /etc/sysconfig/jenkins
+      lineinfile:
+        path: /etc/sysconfig/jenkins
+        line: 'JENKINS_USER="root"'
+
     - name: Configure Java path
-      shell: sed -i '106i\\/usr\/lib\/jvm\/java' /etc/init.d/jenkins
+      lineinfile:
+        path: /etc/init.d/jenkins
+        line: "/usr/lib/jvm/java"
+
     - name: start Jenkins
-      shell: nohup bash /etc/init.d/jenkins start &
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
     - name: Create MongoDB YUM source file
-      shell: touch /etc/yum.repos.d/mongodb-org.repo
-    - name: Configure MongoDB YUM source
-      blockinfile:
-        path: /etc/yum.repos.d/mongodb-org.repo
-        block: |
+      copy:
+        content: |
           [mongodb-org-6.0]
           name=MongoDB Repository
           baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/6.0/x86_64/
           gpgcheck=1
           enabled=1
           gpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc
+        dest: /etc/yum.repos.d/mongodb-org.repo
+
     - name: install MongoDB
-      shell: yum -y install mongodb-org
+      yum:
+        name: mongodb-org
+        state: present
+
     - name: start MongoDB
-      shell: systemctl daemon-reload && systemctl enable mongod.service && systemctl start mongod.service
+      systemd:
+        name: mongod
+        state: started
+        enabled: yes
+
     - name: Install Elasticsearch GPG key
       shell: rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
     - name: Create Elasticsearch YUM source file
-      shell: touch /etc/yum.repos.d/elasticsearch.repo
-    - name: Configure MongoDB YUM source
-      blockinfile:
-        path: /etc/yum.repos.d/elasticsearch.repo
-        block: |
+      copy:
+        content: |
           [elasticsearch-7.10.2]
           name=Elasticsearch repository for 7.10.2 packages
           baseurl=https://artifacts.elastic.co/packages/oss-7.x/yum
@@ -151,32 +404,101 @@
           enabled=1
           autorefresh=1
           type=rpm-md
+        dest: /etc/yum.repos.d/elasticsearch.repo
+
     - name: install elasticsearch-oss
-      shell: yum -y install elasticsearch-oss
+      yum:
+        name: elasticsearch-oss
+        state: present
+
     - name: Modify Elasticsearch configuration file
       blockinfile:
         path: /etc/elasticsearch/elasticsearch.yml
         block: |
           cluster.name: graylog
           action.auto_create_index: false
+
     - name: start Elasticsearch
-      shell: systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
+      systemd:
+        name: elasticsearch
+        state: started
+        enabled: yes
+
+    - name: Change package
+      replace:
+        path: /root/Devops_scp.exp
+        regexp: "jenkins-2.346.3-1.1.noarch.rpm"
+        replace: "graylog-server-5.0.13-1.x86_64.rpm"
+
+    - name: Move jenkins to host
+      shell: expect /root/Devops_scp.exp || echo "ignore"
+
     - name: Check if graylog file exists
-      shell: sed -i "s/jenkins-2.346.3-1.1.noarch.rpm/graylog-server-5.0.13-1.x86_64.rpm/g" /root/Devops_scp.exp && expect Devops_scp.exp || echo "ignore"
-    - name: install graylog
-      shell: yum install -y graylog-server-5.0.13-1.x86_64.rpm || yum install -y https://packages.graylog2.org/repo/el/stable/5.0/x86_64/graylog-server-5.0.13-1.x86_64.rpm
+      stat:
+        path: /root/graylog-server-5.0.13-1.x86_64.rpm
+      register: graylog
+
+    - name: Install graylog
+      block:
+        - name: Download graylog-server-5.0.13-1.x86_64.rpm if not exists
+          get_url:
+            url: https://packages.graylog2.org/repo/el/stable/5.0/x86_64/graylog-server-5.0.13-1.x86_64.rpm
+            dest: /root/graylog-server-5.0.13-1.x86_64.rpm
+          when: not graylog.stat.exists
+
+        - name: Install graylog-server-5.0.13-1.x86_64.rpm
+          yum:
+            name: /root/graylog-server-5.0.13-1.x86_64.rpm
+            state: present
+          when: graylog.stat.exists
+
+    - name: Installation verification
+      shell: yum install -y graylog-server-5.0.13-1.x86_64.rpm || echo "ignore"
+
     - name: create password_secret.txt
-      shell: touch /root/password_secret.txt
+      file:
+        path: /root/password_secret.txt
+        state: touch
+
     - name: Generate password_secret password
       shell: pwgen -N 1 -s 96 > /root/password_secret.txt
+
     - name: create root_password_sha2.txt
-      shell: touch /root/root_password_sha2.txt
+      file:
+        path: /root/root_password_sha2.txt
+        state: touch
+
     - name: Generate root_password_sha2 password
       shell: echo -n admin | sha256sum > /root/root_password_sha2.txt
+
     - name: Enter Graylog configuration file password
-      shell: sed -i "s/password_secret =/password_secret = $(awk '{print $1}' /root/password_secret.txt)/g" /etc/graylog/server/server.conf && sed -i "s/root_password_sha2 =/root_password_sha2 = $(awk '{print $1}' /root/root_password_sha2.txt)/g" /etc/graylog/server/server.conf
+      shell: >
+        sed -i "s/password_secret =/password_secret = $(awk '{print $1}' /root/password_secret.txt)/g" /etc/graylog/server/server.conf &&
+        sed -i "s/root_password_sha2 =/root_password_sha2 = $(awk '{print $1}' /root/root_password_sha2.txt)/g" /etc/graylog/server/server.conf
+
+    - name: Modify Time Zone
+      replace:
+        path: /etc/graylog/server/server.conf
+        regexp: "#root_timezone = UTC"
+        replace: "root_timezone = PRC"
+
+    - name: Modifying the Graylog configuration file
+      replace:
+        path: /etc/graylog/server/server.conf
+        regexp: "elasticsearch_shards = 4"
+        replace: "elasticsearch_shards = 1"
+
+    - name: Modifying the Graylog configuration file
+      replace:
+        path: /etc/graylog/server/server.conf
+        regexp: "#http_bind_address = 127.0.0.1:9000"
+        replace: "http_bind_address = 0.0.0.0:9000"
+
     - name: start Graylog
-      shell: systemctl daemon-reload && systemctl enable graylog-server.service && systemctl start graylog-server.service
+      systemd:
+        name: graylog-server
+        state: started
+        enabled: yes
 ###############################################################################################################
 - hosts: Produce
   remote_user: root
@@ -184,13 +506,46 @@
   tasks:
     - name: stop firewalld
       shell: systemctl stop firewalld && systemctl disable firewalld && sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config && setenforce 0
+
     - name: Change to domestic yum source
-      shell: mkdir /etc/yum.repos.d/CentOS_bak && mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && mv ./Centos-7.repo /etc/yum.repos.d/ && yum clean all && yum makecache fast || echo "ignore"
-    - name: install epel-* nginx mysql-server wget vim
-      shell: yum install -y epel-* && yum install -y nginx mysql-server wget vim
+      block:
+        - name: Change to domestic yum source
+          shell: >
+            mkdir /etc/yum.repos.d/CentOS_bak && 
+            mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak && 
+            curl -O http://mirrors.aliyun.com/repo/Centos-7.repo && 
+            mv ./Centos-7.repo /etc/yum.repos.d/ && 
+            yum clean all && 
+            yum makecache fast
+
+    - name: Install required packages
+      block:
+        - name: install epel-release
+          yum:
+            name: epel-release
+            state: present
+
+        - name: Install packages
+          block:
+            - name: Install basic packages
+              package:
+                name: "{{ item }}"
+                state: present
+              loop:
+                - "nginx"
+                - "mysql"
+                - "wget"
+                - "vim"
+                - "nmap-ncat"
+              tags: ["install"]
+
     - name: Move monitor.sh to the target host
       copy:
         src: "./monitor.sh"
         dest: "/root/"
+
     - name: Set scheduled tasks
-      shell: (crontab -l ; echo "1 * * * * /root/monitor.sh") | crontab -
+      cron:
+        name: "Run monitor.sh every hour"
+        minute: "1"
+        job: "/root/monitor.sh"
