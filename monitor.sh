@@ -26,4 +26,4 @@ printf "  \"useMem\":\"$useMem M\",\n" >> /root/monitor.json
 printf "  \"useRate\":\"$useRate%%\"\n" >> /root/monitor.json
 printf "}\n" >> /root/monitor.json
 
-nc -u ipaddr 12201 < /root/monitor.json
+nc -u ipaddr 514 < /root/monitor.json
