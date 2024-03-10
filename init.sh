@@ -29,9 +29,6 @@ ClusterIpName=("Develop" "Version" "Devops" "Produce")
 #获取控制节点主机ip地址
 ansible_ipaddr=$(ip a | grep -w inet | grep -w brd | awk '{print $2}' | sed "s/\/..*//g")
 
-#配置Graylog目标节点
-sed -i "s/ipaddr/${Produce_ip_addr}/g" /root/monitor.sh
-
 #检测集群节点间网络是否通畅
 for i in ${ClusterIpName[@]}
 do
@@ -56,6 +53,11 @@ do
         echo "${!ip_connect}" >> /etc/ansible/hosts
     fi
 done
+
+#配置Graylog目标节点
+sed -i "s/ipaddr/${Produce_ip_addr}/g" /root/monitor.sh
+#替换playbook剧本中的harbor仓库地址
+sed -i "s/Version_ip/${Version_ip_addr}/g" /root/playbook.yml
 
 #执行ansible剧本
 ansible-playbook playbook.yml
