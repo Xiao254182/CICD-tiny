@@ -3,9 +3,9 @@
 使用：将文件和所需的软件包下载到部署节点，然后执行 bash init.sh
 
 **开发节点：**      **版本控制节点：**      **运维节点：**      **生产节点：**
-- Java              - GitLab                 - Jenkins           - Nginx (OpenResty)
-- Tomcat            - Docker                 - Docker
-- Node.js           - Docker Compose         - Docker Compose
+Java              - GitLab                 - Jenkins           - Nginx (OpenResty)
+Tomcat            - Docker                 - Docker
+Node.js           - Docker Compose         - Docker Compose
 - npm               - Harbor                 - Ansible
 - MySQL             - httpd                  - Graylog
 
@@ -28,12 +28,12 @@
 
 使用：将文件和所需的软件包下载到部署节点，然后执行 `bash init.sh`
 
-**开发节点：**   | **版本控制节点：** | **运维节点：** | **生产节点：**
-- Java            | - GitLab             | - Jenkins     | - Nginx (OpenResty)
-- Tomcat          | - Docker             | - Docker      | 
-- Node.js         | - Docker Compose     | - Docker Compose |
-- npm             | - Harbor             | - Ansible     |
-- MySQL           | - httpd              | - Graylog     |
+|   **开发节点：**   |   **版本控制节点：**   |   **运维节点：**   |   **生产节点：**
+| Java               | GitLab                  | Jenkins            | Nginx (OpenResty)
+| Tomcat             | Docker                  | Docker       
+| Node.js            | Docker Compose          | Docker Compose 
+| npm                | Harbor                  | Ansible     
+| MySQL              | httpd                   | Graylog     
 
 软件包下载地址，将所有软件包都放到控制节点的root目录下再执行init.sh脚本:
 - GitLab: [https://packages.gitlab.com/gitlab/gitlab-ce/packages/el/7/gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm/download.rpm](https://packages.gitlab.com/gitlab/gitlab-ce/packages/el/7/gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm/download.rpm)
