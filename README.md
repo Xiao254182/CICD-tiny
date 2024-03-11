@@ -3,7 +3,7 @@
 使用：将文件和所需的软件包下载到部署节点，然后执行 bash init.sh
 
 **开发节点：**  **版本控制节点：**
-- Java          - GitLab
+- Java          $~~~~$- GitLab
 - Tomcat        - Docker
 - Node.js
 - npm
