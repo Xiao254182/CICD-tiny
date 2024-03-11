@@ -7,6 +7,17 @@ if [ $(echo $? -ne 0) ];then
     exit 0
 fi
 
+
+Package=("gitlab-ce-16.9.2-ce.0.el7.x86_64.rpm" "graylog-server-5.0.13-1.x86_64.rpm" "harbor-offline-installer-v2.5.3.tgz" "jenkins-2.346.3-1.1.noarch.rpm")
+for i in ${Package[@]} 
+do 
+    ls ${i}
+    if [ $(echo $? -ne 0) ];then 
+        echo "未找到${i}软件包，请先下载该软件包到本机/root/目录下"
+        exit 0
+    fi
+done
+
 #更换国内yum源
 mkdir /etc/yum.repos.d/CentOS_bak || echo "ignore"
 mv /etc/yum.repos.d/CentOS-* /etc/yum.repos.d/CentOS_bak || echo "ignore"
@@ -55,7 +66,7 @@ do
 done
 
 #配置Graylog目标节点
-sed -i "s/ipaddr/${Devops_ip_addr}/g" /root/monitor.sh
+sed -i "s/ipaddr/${Produce_ip_addr}/g" /root/monitor.sh
 #替换playbook剧本中的harbor仓库地址
 sed -i "s/Version_ip/${Version_ip_addr}/g" /root/playbook.yml
 
