@@ -1,5 +1,4 @@
-# CICD-tiny
-一键部署精简版企业CICD流水线脚本
+# CICD-tiny 一键部署精简版企业CICD流水线脚本
 
 使用：将文件和所需的软件包下载到控制节点，然后执行 bash init.sh
 
