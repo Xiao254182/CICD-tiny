@@ -72,4 +72,16 @@ sed -i "s/Version_ip/${Version_ip_addr}/g" /root/playbook.yml
 
 #执行ansible剧本
 ansible-playbook playbook.yml
+
+#输出信息
+printf "        GitLab:${Version_ip_addr}:80
+        Harbor:${Version_ip_addr}:81
+            username:admin
+            password:Harbor12345
+        httpd:${Version_ip_addr}:8000
+        Jenkins:${Devops_ip_addr}:8080
+            Temporary Password:
+        Graylog:${Devops_ip_addr}:9000
+            username:admin
+            password:admin\n"
 echo "完成"
