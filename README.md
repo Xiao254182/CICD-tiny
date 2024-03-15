@@ -1,4 +1,5 @@
 # CICD-tiny 一键部署精简版企业CICD流水线脚本
+只适用于Centos7
 
 使用：将文件和所需的软件包全部放到部署节点的/root路径下，然后在/root路径下执行 `bash init.sh`
 
